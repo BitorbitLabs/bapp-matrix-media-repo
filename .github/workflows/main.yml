@@ -1,34 +1,45 @@
-name: Main
+name: Build-Deploy-Prod
 on:
   push:
+    branches: [master]
+
+env: 
+  APP_NAME: matrix-media-repo
+  REPO: ${{ secrets.GAR_PROD }}/${{ secrets.GCP_PROD_PROJECT }}/docker
+  IMAGE_TAG: ${{ github.sha }}
+  ENVIRONMENT: prod-london
+
 jobs:
-  build:
-    name: 'Build Go 1.18'
-    runs-on: ubuntu-latest
+  docker-build:
+    name: Build and push
+    runs-on: prod-london
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-go@v2
-        with:
-          go-version: '1.18'
-      - run: './build.sh'
-  complement:
-    name: 'Complement'
-    runs-on: ubuntu-latest
-    container:
-      # https://github.com/matrix-org/complement/blob/master/dockerfiles/ComplementCIBuildkite.Dockerfile
-      image: matrixdotorg/complement:latest
-      env:
-        CI: true
-      ports:
-        - 8448:8448
-      volumes:
-        - /var/run/docker.sock:/var/run/docker.sock
-    steps:
-      - uses: actions/checkout@v2
-      - run: docker build -t complement-media-repo -f Complement.Dockerfile .
-      - run: chmod +x ci-complement.sh
-      - run: ./ci-complement.sh
+      - uses: actions/checkout@v3
+      - name: Build, tag, and push image 
         env:
-          CI: "true"
-          COMPLEMENT_BASE_IMAGE: "complement-media-repo"
-          COMPLEMENT_SPAWN_HS_TIMEOUT_SECS: "120"
+          DOCKER_BUILDKIT: 1
+        run: |
+          gcloud auth configure-docker ${{ secrets.GAR_PROD }} -q
+          docker build -t $REPO/$APP_NAME:$IMAGE_TAG .
+          docker tag $REPO/$APP_NAME:$IMAGE_TAG $REPO/$APP_NAME:${{ github.ref_name }}
+          docker push $REPO/$APP_NAME:$IMAGE_TAG
+          docker push $REPO/$APP_NAME:${{ github.ref_name }}
+  deploy:
+    name: Deploy via Helmfile
+    runs-on: prod-london
+    needs: docker-build
+    steps:
+      - name: Check out bitorbit-prod-infra
+        uses: actions/checkout@v3
+        with:
+          repository: BitorbitLabs/bitorbit-prod-infra
+          ref: master
+          ssh-key: ${{ secrets.SSH_KEY_PROD_INFRA }}
+      - name: Deploy via helmfile
+        id: deploy
+        run: >
+          cd helmfile &&
+          helmfile -e ${ENVIRONMENT} -l name=${APP_NAME}
+          apply --suppress-diff
+          --set image.tag=${IMAGE_TAG}
+          --set image.repository=${REPO}/${APP_NAME}

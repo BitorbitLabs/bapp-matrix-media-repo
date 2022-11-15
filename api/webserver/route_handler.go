@@ -81,7 +81,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization")
 	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Content-Security-Policy", "sandbox; default-src 'none'; script-src 'none'; plugin-types application/pdf; style-src 'unsafe-inline'; media-src 'self'; object-src 'self';")
+	w.Header().Set("Content-Security-Policy", "default-src 'self';")
 	w.Header().Set("Cross-Origin-Resource-Policy", "cross-origin")
 	w.Header().Set("X-Content-Security-Policy", "sandbox;")
 	w.Header().Set("X-Robots-Tag", "noindex, nofollow, noarchive, noimageindex")
@@ -212,19 +212,19 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							break
 						}
 
-						if rend >= result.SizeBytes {
+						if rend > result.SizeBytes {
 							statusCode = http.StatusRequestedRangeNotSatisfiable
 							res = api.BadRequest("Improper end of range: out of bounds")
 							break
 						}
 
-						if rend <= rstart {
+						if rend < rstart {
 							statusCode = http.StatusRequestedRangeNotSatisfiable
 							res = api.BadRequest("Start must be before end")
 							break
 						}
 
-						if (rstart + rend) >= result.SizeBytes {
+						if (rend - rstart) > result.SizeBytes {
 							statusCode = http.StatusRequestedRangeNotSatisfiable
 							res = api.BadRequest("Range too large")
 							break
@@ -244,8 +244,6 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					rangeEnd = rend
 
 					if (rangeEnd-rangeStart) <= 0 || grabBytes <= 0 {
-						statusCode = http.StatusRequestedRangeNotSatisfiable
-						res = api.BadRequest("Range invalid at last pass")
 						break
 					}
 
