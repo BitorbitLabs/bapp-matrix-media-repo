@@ -27,6 +27,14 @@ func NewDefaultMinimumRepoConfig() MinimumRepoConfig {
 				Enabled:    false,
 				UserQuotas: []QuotaUserConfig{},
 			},
+			AllowedTypes: []string{
+				"image/jpeg",
+				"image/jpg",
+				"image/png",
+				"image/gif",
+				"image/heif",
+				"video/mp4",
+			},
 		},
 		Identicons: IdenticonsConfig{
 			Enabled: true,
