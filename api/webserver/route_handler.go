@@ -81,9 +81,8 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization")
 	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Content-Security-Policy", "sandbox; default-src 'self';")
+	w.Header().Set("Content-Security-Policy", "default-src 'self';")
 	w.Header().Set("Cross-Origin-Resource-Policy", "cross-origin")
-	w.Header().Set("X-Content-Security-Policy", "sandbox;")
 	w.Header().Set("X-Robots-Tag", "noindex, nofollow, noarchive, noimageindex")
 	w.Header().Set("Server", "matrix-media-repo")
 
@@ -174,7 +173,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		rangeEnd := int64(0)
 		grabBytes := int64(0)
 		doRange := false
-		if r.Header.Get("Range") != "" && result.SizeBytes > 0 && rctx.Request != nil && config.Get().Redis.Enabled {
+		if r.Header.Get("Range") != "" && result.SizeBytes > 0 && rctx.Request != nil && config.Get().Redis.Enabled && rctx.Config.Downloads.RangesEnabled {
 			rnge := r.Header.Get("Range")
 			if !strings.HasPrefix(rnge, "bytes=") {
 				statusCode = http.StatusRequestedRangeNotSatisfiable
@@ -275,7 +274,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "private, max-age=259200") // 3 days
 		w.Header().Set("Content-Type", contentType)
 		if result.SizeBytes > 0 {
-			if config.Get().Redis.Enabled {
+			if config.Get().Redis.Enabled && rctx.Config.Downloads.RangesEnabled {
 				w.Header().Set("Accept-Ranges", "bytes")
 			}
 			w.Header().Set("Content-Length", fmt.Sprint(result.SizeBytes))

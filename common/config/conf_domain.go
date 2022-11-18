@@ -20,6 +20,7 @@ func NewDefaultDomainConfig() DomainRepoConfig {
 		Downloads: DownloadsConfig{
 			MaxSizeBytes:        104857600, // 100mb
 			FailureCacheMinutes: 15,
+			RangesEnabled:       false,
 		},
 		UrlPreviews: UrlPreviewsConfig{
 			Enabled:          true,

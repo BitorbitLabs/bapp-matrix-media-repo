@@ -267,6 +267,10 @@ downloads:
   # negative to disable. Defaults to disabled.
   expireAfterDays: 0
 
+  # ALPHA: Enable support for content ranges (being able to skip around in audio and video).
+  # This is only available if caching is enabled.
+  rangesEnabled: true
+
   # The default size, in bytes, to return for range requests on media. Range requests are used
   # by clients when they only need part of a file, such as a video or audio element. Note that
   # the entire file will still be cached (if enabled), but only part of it will be returned.

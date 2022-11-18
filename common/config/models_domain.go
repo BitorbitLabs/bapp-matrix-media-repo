@@ -34,6 +34,7 @@ type DownloadsConfig struct {
 	MaxSizeBytes               int64 `yaml:"maxBytes"`
 	FailureCacheMinutes        int   `yaml:"failureCacheMinutes"`
 	DefaultRangeChunkSizeBytes int64 `yaml:"defaultRangeChunkSizeBytes"`
+	RangesEnabled              bool  `yaml:"rangesEnabled"`
 }
 
 type ThumbnailsConfig struct {
