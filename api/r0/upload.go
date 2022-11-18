@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 
 	"github.com/getsentry/sentry-go"
-	"github.com/ryanuber/go-glob"
 
 	"github.com/sirupsen/logrus"
 	"github.com/turt2live/matrix-media-repo/api"
@@ -16,6 +15,7 @@ import (
 	"github.com/turt2live/matrix-media-repo/controllers/info_controller"
 	"github.com/turt2live/matrix-media-repo/controllers/upload_controller"
 	"github.com/turt2live/matrix-media-repo/quota"
+	"github.com/turt2live/matrix-media-repo/util"
 	"github.com/turt2live/matrix-media-repo/util/cleanup"
 )
 
@@ -49,12 +49,10 @@ func UploadMedia(r *http.Request, rctx rcontext.RequestContext, user api.UserInf
 
 	allowedContentTypes := rctx.Config.Uploads.AllowedTypes
 
-	for _, allowedType := range allowedContentTypes {
-		if !glob.Glob(allowedType, contentType) {
-			io.Copy(ioutil.Discard, r.Body) // Ditch the entire request
-			rctx.Log.Error("Got upload req from " + user.UserId + " for unsupported contentType: " + contentType)
-			return api.BadRequest("This file type is not allowed to upload")
-		}
+	if !util.ArrayContains(allowedContentTypes, contentType) {
+		io.Copy(ioutil.Discard, r.Body) // Ditch the entire request
+		rctx.Log.Error("Got upload req from " + user.UserId + " for unsupported contentType: " + contentType)
+		return api.BadRequest("This file type is not allowed to upload")
 	}
 
 	inQuota, err := quota.IsUserWithinQuota(rctx, user.UserId)
