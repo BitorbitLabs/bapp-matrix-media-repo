@@ -20,6 +20,7 @@ type UploadsConfig struct {
 	MaxSizeBytes         int64        `yaml:"maxBytes"`
 	MinSizeBytes         int64        `yaml:"minBytes"`
 	ReportedMaxSizeBytes int64        `yaml:"reportedMaxBytes"`
+	AllowedTypes         []string     `yaml:"allowedTypes,flow"`
 	Quota                QuotasConfig `yaml:"quotas"`
 }
 
