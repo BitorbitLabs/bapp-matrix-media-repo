@@ -47,7 +47,7 @@ func UploadMedia(r *http.Request, rctx rcontext.RequestContext, user api.UserInf
 		return api.RequestTooSmall()
 	}
 
-	allowedContentTypes := rctx.Config.Uploads.AllowedTypes
+	allowedContentTypes := append(rctx.Config.Uploads.AllowedTypes, "application/octet-stream")
 
 	if !util.ArrayContains(allowedContentTypes, contentType) {
 		io.Copy(ioutil.Discard, r.Body) // Ditch the entire request
