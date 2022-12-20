@@ -1,0 +1,47 @@
+name: Build-Deploy-Prod
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+env: 
+  APP_NAME: matrix-media-repo
+  REPO: ${{ secrets.GAR_PROD }}/${{ secrets.GCP_PROD_PROJECT }}/docker
+  IMAGE_TAG: ${{ github.sha }}
+  ENVIRONMENT: prod-london
+
+jobs:
+  docker-build:
+    name: Build and push
+    runs-on: prod-london
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build, tag, and push image 
+        env:
+          DOCKER_BUILDKIT: 1
+        run: |
+          gcloud auth configure-docker ${{ secrets.GAR_PROD }} -q
+          docker build -t $REPO/$APP_NAME:$IMAGE_TAG .
+          docker tag $REPO/$APP_NAME:$IMAGE_TAG $REPO/$APP_NAME:${{ github.ref_name }}
+          docker push $REPO/$APP_NAME:$IMAGE_TAG
+          docker push $REPO/$APP_NAME:${{ github.ref_name }}
+  deploy:
+    name: Deploy via Helmfile
+    runs-on: prod-london
+    needs: docker-build
+    steps:
+      - name: Check out bitorbit-infra
+        uses: actions/checkout@v3
+        with:
+          repository: BitorbitLabs/bitorbit-infra
+          ref: master
+          ssh-key: ${{ secrets.SSH_KEY_INFRA }}
+      - name: Deploy via helmfile
+        id: deploy
+        run: >
+          cd helmfile &&
+          helmfile -e ${ENVIRONMENT} -l name=${APP_NAME}
+          apply --suppress-diff
+          --set image.tag=${IMAGE_TAG}
+          --set image.repository=${REPO}/${APP_NAME}
